@@ -1,0 +1,44 @@
+
+
+
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "01 Prepare TMDB → JSONL",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/prepare_tmdb.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--csv", "data/raw/TMDB_movie_dataset_v11.csv",
+        "--out", "data/processed/tmdb_docs.jsonl",
+        "--max-cast", "8"
+      ]
+    },
+    {
+      "name": "02 Index (Pyserini/Lucene)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/index_tmdb.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--input-dir", "data/processed",
+        "--index", "indexes/tmdb"
+      ]
+    },
+    {
+      "name": "03 Search: Baseline & Boosted",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/search_tmdb.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--index", "indexes/tmdb",
+        "--queries", "experiments/queries.json",
+        "--qrels", "experiments/qrels.json",
+        "--k", "10"
+      ]
+    }
+  ]
+}
