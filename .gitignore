@@ -1,0 +1,19 @@
+#Ignoring files within this list
+#Large data files 
+data/raw/
+data/processed/
+indexes/
+results/
+
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# macOS junk files
+.DS_Store
+
+
+#comeback back later to add more specific if I need to 
