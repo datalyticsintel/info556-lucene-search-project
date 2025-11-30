@@ -1,3 +1,6 @@
+#This is where I preapred the tmdb data for indexing
+
+
 import argparse, json, pandas as pd, ast, re
 
 def as_list(val):
