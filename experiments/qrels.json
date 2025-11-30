@@ -1,10 +1,26 @@
 
 {
-  "Q1": {},
-  "Q2": {},
-  "Q3": {},
-  "Q4": {},
-  "Q5": {}
+  "Q1": {
+    "description": "movies centered around Las Vegas",
+    "relevant": [1481222, 747331, 17542, 71670, 494659, 632512]
+  },
+  "Q2": {
+    "description": "movies with female leads",
+    "relevant": [848937, 942491, 848932, 387753, 27825]
+  },
+  "Q3": {
+    "description": "movies about the Holocaust",
+    "relevant": [677099, 566864, 1192557, 1203402, 407275]
+  },
+  "Q4": {
+    "description": "movies with babies",
+    "relevant": [108311, 1435159, 409438, 561596,1058719]
+  },
+  "Q5": {
+    "description": "movies with Brittany Murphy",
+    "relevant": [290188, 709098, 316015, 1032584, 52165]
+  }
 }
+
 
 
