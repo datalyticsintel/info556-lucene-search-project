@@ -4,41 +4,30 @@ import json
 import argparse
 import math
 
-# -----------------------------
-# Utility functions
-# -----------------------------
-
-def precision_at_k(relevant, retrieved, k=10):
+def precision_at_k(retrieved, relevant, k=10):
     retrieved_k = retrieved[:k]
-    num_rel = sum(1 for d in retrieved_k if d in relevant)
-    return num_rel / k
+    hits = sum(1 for docid in retrieved_k if docid in relevant)
+    return hits / k
 
-def average_precision(relevant, retrieved):
+def average_precision(retrieved, relevant):
+    score = 0.0
     hits = 0
-    sum_prec = 0
-    for i, docid in enumerate(retrieved, start=1):
+    for i, docid in enumerate(retrieved):
         if docid in relevant:
             hits += 1
-            sum_prec += hits / i
-    return sum_prec / len(relevant) if relevant else 0
+            score += hits / (i + 1)
+    return score / len(relevant) if relevant else 0.0
 
-def dcg(scores):
-    return sum(rel / math.log2(i + 2) for i, rel in enumerate(scores))
+def ndcg_at_k(retrieved, relevant, k=10):
+    dcg = 0.0
+    for i, docid in enumerate(retrieved[:k]):
+        if docid in relevant:
+            dcg += 1 / math.log2(i + 2)
 
-def ndcg_at_k(relevant, retrieved, k=10):
-    retrieved_k = retrieved[:k]
-    rel_scores = [1 if d in relevant else 0 for d in retrieved_k]
+    ideal_hits = min(len(relevant), k)
+    idcg = sum(1 / math.log2(i + 2) for i in range(ideal_hits))
 
-    dcg_val = dcg(rel_scores)
-
-    ideal = sorted(rel_scores, reverse=True)
-    idcg_val = dcg(ideal)
-
-    return dcg_val / idcg_val if idcg_val > 0 else 0
-
-# -----------------------------
-# Main evaluation
-# -----------------------------
+    return dcg / idcg if idcg > 0 else 0.0
 
 def main():
     parser = argparse.ArgumentParser()
@@ -46,41 +35,40 @@ def main():
     parser.add_argument("--run", required=True)
     args = parser.parse_args()
 
-    # Load qrels
     with open(args.qrels, "r") as f:
         qrels = json.load(f)
-
-    # Load run results
     with open(args.run, "r") as f:
         run = json.load(f)
 
     print("\n=== Evaluation Results ===\n")
-    map_total = 0
-    ndcg_total = 0
-    p10_total = 0
-    num_queries = len(qrels)
 
-    for qid, rel_docs in qrels.items():
-        rel_set = set(rel_docs["relevant"])  # list of docids
-        retrieved = [hit["docid"] for hit in run[qid]]
+    p10_list, map_list, ndcg10_list = [], [], []
 
-        p10 = precision_at_k(rel_set, retrieved, k=10)
-        ap = average_precision(rel_set, retrieved)
-        ndcg = ndcg_at_k(rel_set, retrieved, k=10)
+    for qid, query_info in qrels.items():
+        relevant = set(query_info["relevant"])
 
-        p10_total += p10
-        map_total += ap
-        ndcg_total += ndcg
+        retrieved = []
+        for hit in run.get(qid, []):
+            docraw = json.loads(hit["raw"])
+            retrieved.append(docraw["id"])  # <-- use TMDB ID from raw JSON
+
+        p10 = precision_at_k(retrieved, relevant, k=10)
+        ap = average_precision(retrieved, relevant)
+        ndcg10 = ndcg_at_k(retrieved, relevant, k=10)
+
+        p10_list.append(p10)
+        map_list.append(ap)
+        ndcg10_list.append(ndcg10)
 
         print(f"QID {qid}:")
         print(f"  Precision@10 = {p10:.4f}")
         print(f"  MAP          = {ap:.4f}")
-        print(f"  nDCG@10      = {ndcg:.4f}\n")
+        print(f"  nDCG@10      = {ndcg10:.4f}\n")
 
     print("=== Averages ===")
-    print(f"Mean Precision@10 = {p10_total / num_queries:.4f}")
-    print(f"MAP               = {map_total / num_queries:.4f}")
-    print(f"Mean nDCG@10      = {ndcg_total / num_queries:.4f}")
+    print(f"Mean Precision@10 = {sum(p10_list)/len(p10_list):.4f}")
+    print(f"MAP               = {sum(map_list)/len(map_list):.4f}")
+    print(f"Mean nDCG@10      = {sum(ndcg10_list)/len(ndcg10_list):.4f}")
 
 if __name__ == "__main__":
     main()
