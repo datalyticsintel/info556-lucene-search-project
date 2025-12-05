@@ -3,27 +3,32 @@
 
 
 import argparse
-from pyserini.search import SimpleSearcher
+from pyserini.search.lucene import LuceneSearcher
+
+import argparse
+from pyserini.search.lucene import LuceneSearcher
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("query")
-    parser.add_argument("--index", type=str, default="indexes/tmdb")
+    parser.add_argument("query", type=str)
+    parser.add_argument("--index", default="indexes/tmdb")
     args = parser.parse_args()
 
-    searcher = SimpleSearcher(args.index)
-    searcher.set_bm25(k1=1.2, b=0.75)
+    searcher = LuceneSearcher(args.index)
 
-    # Example: boost title field
-    searcher.set_rm3()  # optional RM3
+    # Standard BM25 base config
+    searcher.set_bm25(k1=0.9, b=0.4)
 
-    hits = searcher.search(args.query, k=10)
+    # Weighted query: boost the title field
+    boosted_query = f"title:({args.query})^2.5 contents:({args.query})"
 
-    print(f"\nWeighted BM25 Results for query: {args.query}\n")
+    print(f"\n[WEIGHTED BM25] Query: {args.query}\n")
+    hits = searcher.search(boosted_query, k=10)
+
     for i, hit in enumerate(hits):
         print(f"{i+1}. DocID={hit.docid}, Score={hit.score}")
-        print(hit.raw()[:300] + "...")
-        print("---")
+        raw = searcher.doc(hit.docid).raw()
+        print(raw[:300] + "...\n")
 
 if __name__ == "__main__":
     main()
