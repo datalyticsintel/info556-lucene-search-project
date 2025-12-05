@@ -1,40 +1,24 @@
 #this is after I created the new enviroment with the correct java and python versions
 
-import json
 import argparse
-from pyserini.search.lucene import LuceneSearcher
+from pyserini.search import SimpleSearcher
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--index', required=True)
-    parser.add_argument('--topics', required=True)
-    parser.add_argument('--output', required=True)
+    parser.add_argument("query", type=str, help="Search query string")
+    parser.add_argument("--index", type=str, default="indexes/tmdb", help="Path to Lucene index")
     args = parser.parse_args()
 
-    searcher = LuceneSearcher(args.index)
-    searcher.set_bm25(k1=0.9, b=0.4)
+    searcher = SimpleSearcher(args.index)
+    searcher.set_analyzer("english")
 
-    with open(args.topics, 'r') as f:
-        topics = json.load(f)
+    hits = searcher.search(args.query, k=10)
 
-    results = {}
-
-    for qid, query in topics.items():
-        hits = searcher.search(query, k=20)
-        results[qid] = [
-            {
-                "docid": hit.docid,
-                "score": hit.score,
-                "raw": searcher.doc(hit.docid).raw()
-            }
-            for hit in hits
-        ]
-        print(f"[Baseline] QID={qid} → {len(hits)} hits")
-
-    with open(args.output, "w") as f:
-        json.dump(results, f, indent=2)
-
-    print(f"\nSaved baseline BM25 results to {args.output}")
+    print(f"\nTop results for query: {args.query}\n")
+    for i, hit in enumerate(hits):
+        print(f"{i+1}. DocID={hit.docid}, Score={hit.score}")
+        print(hit.raw()[:300] + "...")
+        print("---")
 
 if __name__ == "__main__":
     main()

@@ -2,54 +2,28 @@
 
 
 
-
-import json
 import argparse
-from pyserini.search.lucene import LuceneSearcher
+from pyserini.search import SimpleSearcher
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--index', required=True)
-    parser.add_argument('--topics', required=True)
-    parser.add_argument('--output', required=True)
+    parser.add_argument("query")
+    parser.add_argument("--index", type=str, default="indexes/tmdb")
     args = parser.parse_args()
 
-    searcher = LuceneSearcher(args.index)
-    searcher.set_bm25(k1=0.9, b=0.4)
+    searcher = SimpleSearcher(args.index)
+    searcher.set_bm25(k1=1.2, b=0.75)
 
-    # FIELD WEIGHTS – these are tunable
-    weights = {
-        "title": 3.0,
-        "keywords": 2.0,
-        "overview": 1.0
-    }
+    # Example: boost title field
+    searcher.set_rm3()  # optional RM3
 
-    with open(args.topics, 'r') as f:
-        topics = json.load(f)
+    hits = searcher.search(args.query, k=10)
 
-    results = {}
-
-    for qid, query in topics.items():
-        # Build weighted multi-field query
-        weighted_query = " ".join([
-            f"{field}:{query}^{w}" for field, w in weights.items()
-        ])
-
-        hits = searcher.search(weighted_query, k=20)
-        results[qid] = [
-            {
-                "docid": hit.docid,
-                "score": hit.score,
-                "raw": searcher.doc(hit.docid).raw()
-            }
-            for hit in hits
-        ]
-        print(f"[Weighted] QID={qid} → {len(hits)} hits")
-
-    with open(args.output, "w") as f:
-        json.dump(results, f, indent=2)
-
-    print(f"\nSaved WEIGHTED BM25 results to {args.output}")
+    print(f"\nWeighted BM25 Results for query: {args.query}\n")
+    for i, hit in enumerate(hits):
+        print(f"{i+1}. DocID={hit.docid}, Score={hit.score}")
+        print(hit.raw()[:300] + "...")
+        print("---")
 
 if __name__ == "__main__":
     main()
